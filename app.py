@@ -17,29 +17,32 @@ def call_local_model_with_messages(messages):
         return f"抱歉，發生錯誤 : {str(e)}"
     
 
-def chatgpt_clone(user_input, history, max_rounds):
-    if not isinstance(history, list):
-        history = []
+def chatgpt_clone(user_input, history_all, max_rounds):
+    # 更新全部聊天歷史
+    if not isinstance(history_all, list):
+        history_all = []
     
+    # 擴增全部聊天歷史
+    history_all.append((user_input, ""))
+
+    # 傳給模型的對話數
+    history_context = history_all[-int(max_rounds):]
+
     # 組裝 messages 給模型用
     messages = [{"role":"system", "content":"你是一個旅遊問答助手。你的回答風格是友好的、口語化的。"}]
 
-    for user_msg, assistant_msg in history:
+    for user_msg, assistant_msg in history_context:
         messages.append({"role":"user", "content": user_msg})
-        messages.append({"role":"assistant", "content":assistant_msg})
-    
+        if assistant_msg:
+            messages.append({"role":"assistant", "content":assistant_msg}) 
     messages.append({"role":"user", "content":user_input})
 
     # 呼叫模型
     output = call_local_model_with_messages(messages)
 
-    # 更新對話紀錄
-    history.append((user_input, output))
+    history_all[-1] = (user_input, output)
 
-    # 限制只保留最近 max_round 輪（每輪包含一問一答）
-    history = history[-int(max_rounds):]
-
-    return history, history
+    return history_all, history_all
 
 with gr.Blocks() as block:
     gr.Markdown("""<h1><center>旅遊助手</center></h1>""")
@@ -58,5 +61,3 @@ with gr.Blocks() as block:
     submit.click(clear_input, inputs=[], outputs=[message])
 
 block.launch(share=True)
-
-# abcdefg
