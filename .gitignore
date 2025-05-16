@@ -1,0 +1,15 @@
+# Python 暫存檔案
+__pycache__/
+*.py[cod]
+
+# 虛擬環境
+venv/
+
+# 機密檔案
+.env
+
+# Gradio 相關
+.gradio/
+
+# Log 檔案
+*.log
