@@ -18,6 +18,7 @@ def call_local_model_with_messages(messages):
     
 
 def chatgpt_clone(user_input, history_all, max_rounds):
+    
     # 更新全部聊天歷史
     if not isinstance(history_all, list):
         history_all = []
@@ -37,9 +38,10 @@ def chatgpt_clone(user_input, history_all, max_rounds):
             messages.append({"role":"assistant", "content":assistant_msg}) 
     messages.append({"role":"user", "content":user_input})
 
-    # 呼叫模型
+    # 呼叫模型取得回覆
     output = call_local_model_with_messages(messages)
-
+    
+    # 回填最後一輪 assistant 回覆
     history_all[-1] = (user_input, output)
 
     return history_all, history_all
@@ -51,6 +53,7 @@ with gr.Blocks() as block:
     chatbot = gr.Chatbot()
     message = gr.Textbox(placeholder="請輸入您的旅遊相關問題...")
     state = gr.State([])
+
     # 聊天紀錄是透過 Python 中的變數 history 來傳遞的，而 gr.State 就像是一個「儲物箱」，幫你在按鈕之間維持這份聊天紀錄。
     submit = gr.Button("送出")
 
