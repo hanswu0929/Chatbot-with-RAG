@@ -13,3 +13,6 @@ venv/
 
 # Log 檔案
 *.log
+
+# SQL 檔案
+*.db
