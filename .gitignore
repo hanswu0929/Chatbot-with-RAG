@@ -16,3 +16,6 @@ venv/
 
 # SQL 檔案
 *.db
+
+# 私人資料檔案夾
+*knowledge/
