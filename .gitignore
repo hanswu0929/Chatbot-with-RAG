@@ -18,4 +18,4 @@ venv/
 *.db
 
 # 私人資料檔案夾
-*knowledge/
+knowledge/
