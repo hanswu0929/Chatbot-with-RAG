@@ -1,6 +1,7 @@
 import requests
 import sqlite3
 import gradio as gr
+from rag_retrieve import build_rag_prompt
 
 DATABASE = "history.db"
 
@@ -51,32 +52,34 @@ def call_local_model_with_messages(messages):
 def chatgpt_clone(user_input, history, max_rounds):
     
     # 更新全部聊天歷史
-    if not isinstance(history, list):
+    if isinstance(history, list):
         history = []
-
-    # 組裝 messages 給模型用
-    messages = [{"role":"system", "content":"你是一個旅遊問答助手。你的回答風格是友好的、口語化的。"}]
-    for user_msg, assistant_msg in history:
-        messages.append({"role":"user", "content": user_msg})
-        messages.append({"role":"assistant", "content":assistant_msg}) 
-    messages.append({"role":"user", "content":user_input})
-
-    # 呼叫模型取得回覆
-    output = call_local_model_with_messages(messages)
     
-    # 儲存本輪對話到 SQLite 資料庫
+    # 1. 利用 RAG 查詢並組 Prompt
+    rag_prompt = build_rag_prompt(user_input)
+
+    # 2. 把 prompt 當作 system message 傳給模型
+    message = [
+        {"role": "system", "content": rag_prompt}
+    ]
+
+    # 3. 呼叫 LLM 取得回應（call_local_model_with_messages）
+    output = call_local_model_with_messages(message)
+
+    # 4. 儲存與顯示紀錄
     save_to_db(user_input, output)
-
-    # 更新當前 session 的對話紀錄
     history.append((user_input, output))
-    history = history[-int(max_rounds):] # 只保留最近 N 輪
+    history = history[-int(max_rounds):]
 
-    chatbot_messages = []
-    for user_msg, assistant_msg in history:
-        chatbot_messages.append({"role": "user", "content": user_msg})
-        chatbot_messages.append({"role": "assistant", "content": assistant_msg})
-
-    return chatbot_messages, history
+    # 5. 給 chatbot 轉換成 messages 格式
+    chatbot_msgs = []
+    for u, a in history:
+        chatbot_msgs += [
+            {"role": "user", "content": u},
+            {"role": "assistant", "content": a},
+        ]
+    
+    return chatbot_msgs, history
 
 # 顯示所有歷史聊天（以 Markdown 呈現）
 def show_full_history():
