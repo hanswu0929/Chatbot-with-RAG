@@ -36,7 +36,7 @@ def main():
             docs.extend(chunk_text(raw, CHUNK_SIZE))
     
     embeds = ollama_embed_text(docs)
-    print(f"已完成向量化：共 {len(docs)} 段")
+    print(f"已完成向量化：共 {len(embeds)} 段")
 
     client = chromadb.PersistentClient(path=CHROMA_DIR)
     col = client.get_or_create_collection("knowledge")
