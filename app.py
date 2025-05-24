@@ -88,8 +88,8 @@ def show_full_history():
         return "(目前尚無任何聊天紀錄)"
     text = ""
     for row in rows:
-        text += f"**{row['id']}. 使用者:**{row['user_message']}\n\n"
-        text += f"** 助理:**{row['assistant_message']}\n\n"
+        text += f"{row['id']}. 使用者 : {row['user_message']}\n\n"
+        text += f" 助理 : {row['assistant_message']}\n\n"
         text += f"`{row['timestamp']}`\n\n---\n"
     return text
 
@@ -119,4 +119,4 @@ with gr.Blocks() as block:
     # 顯示所有歷史紀錄
     history_btn.click(show_full_history, None, outputs=[full_history_md])
 
-block.launch(share=True)
+block.launch(server_name="0.0.0.0", server_port=7860, share=True)
