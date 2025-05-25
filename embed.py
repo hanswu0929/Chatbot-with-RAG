@@ -10,8 +10,9 @@ def chunk_text(text, size):
 def ollama_embed_text(text_list):
     url = "http://localhost:11434/api/embeddings"
     results = []
+    success_docs = []
     for text in text_list:
-        print("送出字串：", repr(text))  # debug
+        print("送出字串： ", repr(text))  # debug
         if not text.strip():           # 跳過空白
             print("⚠️  跳過空白段落")
             continue
@@ -20,12 +21,13 @@ def ollama_embed_text(text_list):
             "prompt": text
         })
         data = response.json()
-        print("API回傳內容：", data)
+        print("API回傳內容: ", data)
         if "embedding" not in data or not data["embedding"]:
             print("⚠️  無法產生向量，送出的內容為：", repr(text))
             continue
         results.append(data["embedding"])
-    return results
+        success_docs.append(text)
+    return success_docs, results
 
 
 def main():
@@ -35,7 +37,7 @@ def main():
             raw = f.read().strip()
             docs.extend(chunk_text(raw, CHUNK_SIZE))
     
-    embeds = ollama_embed_text(docs)
+    docs, embeds = ollama_embed_text(docs)
     print(f"已完成向量化：共 {len(embeds)} 段")
 
     client = chromadb.PersistentClient(path=CHROMA_DIR)
