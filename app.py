@@ -11,6 +11,21 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+# 確認資料庫是否存在
+def init_db():
+    conn = get_db()
+    db = conn.cursor()
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS chat_history(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_message TEXT,
+        assistant_message TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP       
+        )
+    """)
+    conn.commit()
+    conn.close()
+
 # 儲存一筆聊天問答到資料庫
 def save_to_db(user_msg, assistant_msg):
     conn = get_db()
@@ -31,7 +46,7 @@ def load_all_history():
 
     history = [dict(row) for row in rows] # 轉成 list of dict
     return history
-
+   
 def call_local_model_with_messages(messages):
     try:
         response = requests.post(
@@ -50,36 +65,29 @@ def call_local_model_with_messages(messages):
     
 # 聊天主流程（history 只保留最近 N 輪，全部問答永久進 DB）
 def chatgpt_clone(user_input, history, max_rounds):
-    
-    # 更新全部聊天歷史
-    if isinstance(history, list):
+
+    if not isinstance(history, list):
         history = []
-    
-    # 1. 利用 RAG 查詢並組 Prompt
+
     rag_prompt = build_rag_prompt(user_input)
 
-    # 2. 把 prompt 當作 system message 傳給模型
-    message = [
-        {"role": "system", "content": rag_prompt}
-    ]
+    chatbot_msg = []
+    for u, a in history:
+        chatbot_msg.append({"role": "user", "content": u})
+        chatbot_msg.append({"role": "assistant", "content": a})
+    
+    messages = [{"role": "system", "content": rag_prompt}] + chatbot_msg
+    output = call_local_model_with_messages(messages)
 
-    # 3. 呼叫 LLM 取得回應（call_local_model_with_messages）
-    output = call_local_model_with_messages(message)
-
-    # 4. 儲存與顯示紀錄
     save_to_db(user_input, output)
+
     history.append((user_input, output))
     history = history[-int(max_rounds):]
 
-    # 5. 給 chatbot 轉換成 messages 格式
-    chatbot_msgs = []
-    for u, a in history:
-        chatbot_msgs += [
-            {"role": "user", "content": u},
-            {"role": "assistant", "content": a},
-        ]
-    
-    return chatbot_msgs, history
+    chatbot_msg.append({"role": "user", "content": user_input})
+    chatbot_msg.append({"role": "assistant", "content": output})
+
+    return chatbot_msg, history
 
 # 顯示所有歷史聊天（以 Markdown 呈現）
 def show_full_history():
@@ -92,6 +100,8 @@ def show_full_history():
         text += f" 助理 : {row['assistant_message']}\n\n"
         text += f"`{row['timestamp']}`\n\n---\n"
     return text
+
+init_db()
 
 with gr.Blocks() as block:
     gr.Markdown("<h1><center>旅遊助手</center></h1>")
