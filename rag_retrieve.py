@@ -39,7 +39,7 @@ def build_rag_prompt(user_q: str) -> str:
     print("檢索到的相關片段：", chunks)
 
     prompt = (
-        "你是旅遊客服專員，僅可根據 <知識庫> 內容回答，若知識庫無相關資訊請回答「我不知道」。\n"
+        "你是旅遊客服專員，請盡可能根據 <知識庫> 內容回答，若知識庫無相關資訊才可以自行判斷。\n"
         "<知識庫>\n"
         + "\n".join([f"{i+1}. {ck}" for i, ck in enumerate(chunks)])
         + f"\n</知識庫>\n\n使用者問題{user_q}"
